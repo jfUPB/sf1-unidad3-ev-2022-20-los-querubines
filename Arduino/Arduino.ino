@@ -53,12 +53,17 @@ void loop(){
       if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
             mpu.dmpGetQuaternion(&q, fifoBuffer);
             memcpy(Quack, (uint8_t *)&q.w, 4);
-            memcpy(Quack, (uint8_t *)&q.x, 4);
-            memcpy(Quack, (uint8_t *)&q.y, 4);
-            memcpy(Quack, (uint8_t *)&q.z, 4);
+            memcpy(Quack+4, (uint8_t *)&q.x, 4);
+            memcpy(Quack+8, (uint8_t *)&q.y, 4);
+            memcpy(Quack+12, (uint8_t *)&q.z, 4);
     }
-      if(Serial.available() > 0){
-        Serial.write(Quack, 16);
+      if(Serial.available() > 0)
+      {
+        String Orden = Serial.readStringUntil('\n');
+        if (Orden=="O")
+        {
+          Serial.write(Quack, 16);
+        }
       }
   }
 }

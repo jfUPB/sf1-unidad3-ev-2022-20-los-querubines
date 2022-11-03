@@ -9,7 +9,7 @@ public class Acce : MonoBehaviour
     private SerialPort _serialPort = new SerialPort();
     private byte[] buffer = new byte[16];
 
-    private float inter = 0.08f;
+    private float inter = 0.01f;
     private float timer;
     
     public float qw, qx, qy, qz;
@@ -32,9 +32,13 @@ public class Acce : MonoBehaviour
             qy = BitConverter.ToSingle(buffer, 8);
             qz = BitConverter.ToSingle(buffer, 12);
       
-            transform.rotation = new Quaternion(qx, -qy, -qz, qw);
+            transform.rotation = new Quaternion(qx,-qz, qy, qw);
         }
         timer += Time.deltaTime;
-        if (timer > inter) timer = timer - inter;
+        if (timer > inter)
+        {
+            timer = timer - inter;
+            _serialPort.Write("O\n");
+        }
     }
 }
