@@ -3,14 +3,11 @@
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
     #include "Wire.h"
 #endif
+
 MPU6050 mpu;
 
-#define OUTPUT_READABLE_QUATERNION
-Quaternion q;    
-VectorInt16 aa;
-VectorInt16 aaReal;
-VectorInt16 aaWorld;
-VectorFloat gravity;
+Quaternion q;
+uint8_t Quack[16] = {0};
 
 bool dmpReady = false;
 uint8_t mpuIntStatus;
@@ -30,11 +27,7 @@ void setup() {
 
     Serial.begin(115200);
 
-    Serial.println(F("Initializing I2C devices..."));
     mpu.initialize();
-    Serial.println(F("Testing device connections..."));
-    Serial.println(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));
-    Serial.println(F("Initializing DMP..."));
     devStatus = mpu.dmpInitialize();
     
     mpu.setXGyroOffset(220);
@@ -46,35 +39,26 @@ void setup() {
         mpu.CalibrateAccel(6);
         mpu.CalibrateGyro(6);
         mpu.PrintActiveOffsets();
-        // turn on the DMP, now that it's ready
-        Serial.println(F("Enabling DMP..."));
         mpu.setDMPEnabled(true);
-
-        // set our DMP Ready flag so the main loop() function knows it's okay to use it
-        Serial.println(F("DMP ready! Waiting for first interrupt..."));
         dmpReady = true;
-
-        // get expected DMP packet size for later comparison
         packetSize = mpu.dmpGetFIFOPacketSize();
-    } else {
-        Serial.print(F("DMP Initialization failed (code "));
-        Serial.print(devStatus);
-        Serial.println(F(")"));
     }
 }
 
 void loop(){
-  if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
-        #ifdef OUTPUT_READABLE_QUATERNION
+
+  if(!dmpReady) return;
+  
+  if(Serial.available()){
+      if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer)) {
             mpu.dmpGetQuaternion(&q, fifoBuffer);
-            Serial.print(q.w);
-            Serial.print(",");
-            Serial.print(q.x);
-            Serial.print(",");
-            Serial.print(q.y);
-            Serial.print(",");
-            Serial.println(q.z);
-        #endif
-        delay(100);
+            memcpy(Quack, (uint8_t *)&q.w, 4);
+            memcpy(Quack, (uint8_t *)&q.x, 4);
+            memcpy(Quack, (uint8_t *)&q.y, 4);
+            memcpy(Quack, (uint8_t *)&q.z, 4);
+    }
+      if(Serial.available() > 0){
+        Serial.write(Quack, 16);
+      }
   }
 }
